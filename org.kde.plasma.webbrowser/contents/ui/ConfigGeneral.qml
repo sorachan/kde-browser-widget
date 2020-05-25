@@ -24,7 +24,7 @@ Kirigami.FormLayout {
             text: i18nc("@option:check", "Minimum width (px):")
 
             onClicked: {
-                cfg_useConstantZoom = false;
+                cfg_useConstantZoom = !checked;
                 if (checked) {
                     minViewWidth.forceActiveFocus();
                 }
@@ -51,7 +51,7 @@ Kirigami.FormLayout {
             text: i18nc("@option:check", "Zoom factor (%):")
 
             onClicked: {
-                cfg_useMinViewWidth = false;
+                cfg_useMinViewWidth = !checked;
                 if (checked) {
                     constantZoomFactor.forceActiveFocus();
                 }

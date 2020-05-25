@@ -102,12 +102,20 @@ ColumnLayout {
             interval: 100
 
             readonly property int minViewWidth : plasmoid.configuration.minViewWidth
+            readonly property bool useMinViewWidth : plasmoid.configuration.useMinViewWidth
+            readonly property int constantZoomFactor : plasmoid.configuration.constantZoomFactor
 
             onTriggered: {
-                // Try to fit contents for a smaller screen
-                webview.zoomFactor = Math.min(1, webview.width / minViewWidth);
+                var newZoom = 1;
+                if (useMinViewWidth) {
+                    // Try to fit contents for a smaller screen
+                    newZoom = Math.min(1, webview.width / minViewWidth);
+                } else {
+                    newZoom = constantZoomFactor / 100.0;
+                }
+                webview.zoomFactor = newZoom;
                 // setting the zoom factor does not always work on the first try; also, numbers get rounded
-                if(Math.round(1000*webview.zoomFactor) != Math.round(1000*Math.min(1, webview.width / minViewWidth)))
+                if(Math.round(1000*webview.zoomFactor) != Math.round(1000*newZoom))
                     updateZoomTimer.restart();
             }
         }
@@ -144,30 +152,14 @@ ColumnLayout {
 
             Connections {
                 target: plasmoid.configuration
-
-                readonly property bool useMinViewWidth : plasmoid.configuration.useMinViewWidth
-                readonly property bool useConstantZoom : plasmoid.configuration.useConstantZoom
-                readonly property int constantZoomFactor : plasmoid.configuration.constantZoomFactor
                 
-                function updateZoom () {
-                    if (!useMinViewWidth) {
-                        updateZoomTimer.stop()
-                        if (useConstantZoom) {
-                            updateZoomTimer.stop();
-                            webview.zoomFactor = constantZoomFactor / 100.0;
-                        }
-                    } else {
-                        updateZoomTimer.start()
-                    }
-                }
+                onMinViewWidthChanged: updateZoomTimer.start()
 
-                onMinViewWidthChanged: updateZoom()
+                onUseMinViewWidthChanged: updateZoomTimer.start()
 
-                onUseMinViewWidthChanged: updateZoom()
+                onConstantZoomFactorChanged: updateZoomTimer.start()
 
-                onConstantZoomFactorChanged: updateZoom()
-
-                onUseConstantZoomChanged: updateZoom()
+                onUseConstantZoomChanged: updateZoomTimer.start()
             }
 
             onLinkHovered: {
