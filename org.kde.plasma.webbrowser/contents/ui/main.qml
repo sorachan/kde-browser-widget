@@ -1,6 +1,7 @@
 /***************************************************************************
  *   Copyright 2014, 2016 by Mikhail Ivchenko <ematirov@gmail.com>         *
  *   Copyright 2018 by Kai Uwe Broulik <kde@privat.broulik.de>             *
+ *   Copyright 2020 by Sora Steenvoort <sora@dillbox.me>             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -99,9 +100,15 @@ ColumnLayout {
         Timer {
             id: updateZoomTimer
             interval: 100
+
+            readonly property int minViewWidth : plasmoid.configuration.minViewWidth
+
             onTriggered: {
                 // Try to fit contents for a smaller screen
-                webview.zoomFactor = Math.min(1, webview.width / 1000);
+                webview.zoomFactor = Math.min(1, webview.width / minViewWidth);
+                // setting the zoom factor does not always work on the first try; also, numbers get rounded
+                if(Math.round(1000*webview.zoomFactor) != Math.round(1000*Math.min(1, webview.width / minViewWidth)))
+                    updateZoomTimer.restart();
             }
         }
 
@@ -133,6 +140,36 @@ ColumnLayout {
             onUrlChanged: plasmoid.configuration.url = url;
             Component.onCompleted: url = plasmoid.configuration.url;
 
+            readonly property bool useMinViewWidth : plasmoid.configuration.useMinViewWidth
+
+            Connections {
+                target: plasmoid.configuration
+
+                readonly property bool useMinViewWidth : plasmoid.configuration.useMinViewWidth
+                readonly property bool useConstantZoom : plasmoid.configuration.useConstantZoom
+                readonly property int constantZoomFactor : plasmoid.configuration.constantZoomFactor
+                
+                function updateZoom () {
+                    if (!useMinViewWidth) {
+                        updateZoomTimer.stop()
+                        if (useConstantZoom) {
+                            updateZoomTimer.stop();
+                            webview.zoomFactor = constantZoomFactor / 100.0;
+                        }
+                    } else {
+                        updateZoomTimer.start()
+                    }
+                }
+
+                onMinViewWidthChanged: updateZoom()
+
+                onUseMinViewWidthChanged: updateZoom()
+
+                onConstantZoomFactorChanged: updateZoom()
+
+                onUseConstantZoomChanged: updateZoom()
+            }
+
             onLinkHovered: {
                 if (hoveredUrl.toString() !== "") {
                     mouseArea.cursorShape = Qt.PointingHandCursor;
@@ -141,11 +178,16 @@ ColumnLayout {
                 }
             }
 
-            onWidthChanged: updateZoomTimer.start()
+            onWidthChanged: {
+                if (useMinViewWidth) {
+                    updateZoomTimer.start()
+                }
+            }
+
             onLoadingChanged: {
                 if (loadRequest.status === WebEngineLoadRequest.LoadStartedStatus) {
                     infoButton.dismiss();
-                } else if (loadRequest.status === WebEngineLoadRequest.LoadSucceededStatus) {
+                } else if (loadRequest.status === WebEngineLoadRequest.LoadSucceededStatus && useMinViewWidth) {
                     updateZoomTimer.start();
                 }
             }

@@ -4,6 +4,8 @@ The original KDE web browser widget automatically scales views narrower than 100
 
 Now I'll just need to figure out how to get this to the KDE folks, I'd love to contribute my work :)
 
+*Note:* I hope I haven't violated any design principles, this was my first time working with Plasmoids, or QML in general…
+
 ## Before
 
 ![screenshot of the original widget](https://i.imgur.com/nqsJxmj.jpg)
